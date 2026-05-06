@@ -1,23 +1,22 @@
-﻿using Anthropic;
-using Google.GenAI;
-using Microsoft.Extensions.AI;
-using OpenAI.Chat;
+﻿using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Primerchatbot;
 using Primerchatbot.Chatbots;
-using System.Text;
+using Primerchatbot.Inyections;
 
 Utilidades.CargarVariableDeAmbiente();
+/*
+ * Aquí es donde configuramos los clientes de chat para cada proveedor de IA (OpenAI, Anthropic y Gemini) y especificamos el modelo que queremos usar.
+ */
+var proveedor = args.Length > 0 ? args[0].ToLowerInvariant() : "gemini";
+var modeloPorDefecto = proveedor == "openai" ? "gpt-5.4-nano-2026-03-17" : proveedor == "claude" ? "claude-haiku-4-5" : "gemini-2.5-flash";
+var modelo = args.Length > 1 ? args[1] : modeloPorDefecto;
 
-var modeloOpenAI = "gpt-5.4-nano-2026-03-17";
-var llaveOpenAI = Environment.GetEnvironmentVariable("OPENAI_KEY");
-var clienteOpenAI = new OpenAI.Chat.ChatClient(modeloOpenAI, llaveOpenAI).AsIChatClient();
+Console.WriteLine($"{proveedor}: {modelo}");
 
-var modeloAnthropic = "claude-haiku-4-5";
-string llaveAnthropic = Environment.GetEnvironmentVariable("ANTHROPIC_KEY")!;
-IChatClient clienteAnthropic = new AnthropicClient(){ApiKey = llaveAnthropic}.AsIChatClient().AsBuilder().ConfigureOptions(x => x.ModelId = modeloAnthropic).Build();
-
-var modeloGemini = "gemini-2.5-flash";
-var llaveGemini = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
-IChatClient clienteGemini = new Client(apiKey: llaveGemini).AsIChatClient().AsBuilder().ConfigureOptions(x => x.ModelId = modeloGemini).Build();
-
-await Chatbot.Correr(clienteGemini);
+var builder = Host.CreateApplicationBuilder(args);
+Startup.ConfigureServices(builder, proveedor, modelo);
+var host = builder.Build();
+var chatClient = host.Services.GetRequiredService<IChatClient>();
+await Chatbot.Correr(chatClient);

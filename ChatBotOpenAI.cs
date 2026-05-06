@@ -44,6 +44,9 @@ namespace Primerchatbot
             Las respuestas deben ser en un texto plano, no usar formatos como markdown.
             """;
 
+
+            // Le pasamos el Rol System para indicar que este mensaje es una instrucción para el modelo de lenguaje,
+            // es decir, es un mensaje que establece el contexto y las reglas para la conversación.
             mensajes.Add(new ChatMessage(role: ChatRole.System, systemPrompt));
 
             //Bucle infinito para mantener el programa en ejecución
@@ -66,8 +69,10 @@ namespace Primerchatbot
                    break;
                }
 
-               //Agregar la entrada del usuario al historial de mensajes
-               mensajes.Add(new ChatMessage(role: ChatRole.User, entrada));
+                // Agregamos el rol de User para indicar que este mensaje es una pregunta del usuario,
+                // esto es importante para que el modelo de lenguaje entienda el contexto de la conversación
+                // y pueda responder de manera adecuada. 
+                mensajes.Add(new ChatMessage(role: ChatRole.User, entrada));
 
                 Console.WriteLine();
                 Console.Write($"IA: ");
