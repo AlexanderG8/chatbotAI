@@ -3,6 +3,7 @@ using Google.GenAI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Primerchatbot.Services;
 
 namespace Primerchatbot.Inyections
@@ -19,7 +20,14 @@ namespace Primerchatbot.Inyections
             string llaveAnthropic = Environment.GetEnvironmentVariable("ANTHROPIC_KEY")!;
             string llaveGemini = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
 
-            builder.Services.AddTransient<IServicioClimaFalso, ServicioClimaFalso>();
+            //builder.Services.AddTransient<IServicioClimaFalso, ServicioClimaFalso>();
+            builder.Services.AddTransient<IServicioClima, ServicioClimaOpenWeather>();
+
+            // Agregamos el servicio de evaluación de condiciones, que se encargará de analizar las respuestas del modelo y determinar si se deben ejecutar herramientas o no.
+            builder.Services.AddTransient<ServicioEvaluaCondiciones>();
+
+            builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.None);
+            builder.Services.AddHttpClient();
 
             builder.Services.AddSingleton<IChatClient>(sp => 
             {
