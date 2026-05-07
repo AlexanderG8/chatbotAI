@@ -3,10 +3,10 @@ using Google.GenAI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Primerchatbot.Services;
 
 namespace Primerchatbot.Inyections
 {
-    // Esta clase se encarga de configurar los servicios necesarios para la aplicación, específicamente el cliente de chat para el proveedor de IA seleccionado.
     internal static class Startup
     {
         public static void ConfigureServices(HostApplicationBuilder builder, string proveedor, string? modelo)
@@ -18,6 +18,8 @@ namespace Primerchatbot.Inyections
             string llaveOpenAI = Environment.GetEnvironmentVariable("OPENAI_KEY");
             string llaveAnthropic = Environment.GetEnvironmentVariable("ANTHROPIC_KEY")!;
             string llaveGemini = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+
+            builder.Services.AddTransient<IServicioClimaFalso, ServicioClimaFalso>();
 
             builder.Services.AddSingleton<IChatClient>(sp => 
             {
@@ -32,7 +34,8 @@ namespace Primerchatbot.Inyections
                 .ConfigureOptions(x => 
                 {
                     x.MaxOutputTokens = 2048;
-                    x.Temperature = 0.7f; 
+                    x.Temperature = 0.7f;
+                    x.Tools = [.. Tools.Tools.ObtenerTools(sp)];
                 })
                 .Use(async (mensaje, opciones, next, cancellationToken) => 
                 {
@@ -48,7 +51,9 @@ namespace Primerchatbot.Inyections
                     Console.WriteLine($"Se brindo respuesta...");
                     Console.ResetColor();
 
-                }).Build(sp);
+                })
+                .UseFunctionInvocation()
+                .Build(sp);
             });
         }
     }
