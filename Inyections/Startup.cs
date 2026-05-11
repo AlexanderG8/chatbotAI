@@ -22,12 +22,14 @@ namespace Primerchatbot.Inyections
 
             //builder.Services.AddTransient<IServicioClimaFalso, ServicioClimaFalso>();
             builder.Services.AddTransient<IServicioClima, ServicioClimaOpenWeather>();
-
-            // Agregamos el servicio de evaluación de condiciones, que se encargará de analizar las respuestas del modelo y determinar si se deben ejecutar herramientas o no.
             builder.Services.AddTransient<ServicioEvaluaCondiciones>();
 
             builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.None);
             builder.Services.AddHttpClient();
+
+            // Agregamos servicios relacionados con correo electrónico falso
+            builder.Services.AddTransient<ServicioEnviarCorreoFalso>();
+            builder.Services.AddTransient<ServicioObtenerCorreoFalso>();
 
             builder.Services.AddSingleton<IChatClient>(sp => 
             {
@@ -45,21 +47,21 @@ namespace Primerchatbot.Inyections
                     x.Temperature = 0.7f;
                     x.Tools = [.. Tools.Tools.ObtenerTools(sp)];
                 })
-                .Use(async (mensaje, opciones, next, cancellationToken) => 
-                {
-                    Console.WriteLine();
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"Analizando prompt...");
-                    Console.ResetColor();
+                //.Use(async (mensaje, opciones, next, cancellationToken) => 
+                //{
+                //    Console.WriteLine();
+                //    Console.ForegroundColor = ConsoleColor.Green;
+                //    Console.WriteLine($"Analizando prompt...");
+                //    Console.ResetColor();
 
-                    await next(mensaje, opciones, cancellationToken);
+                //    await next(mensaje, opciones, cancellationToken);
 
-                    Console.WriteLine();
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"Se brindo respuesta...");
-                    Console.ResetColor();
+                //    Console.WriteLine();
+                //    Console.ForegroundColor = ConsoleColor.Green;
+                //    Console.WriteLine($"Se brindo respuesta...");
+                //    Console.ResetColor();
 
-                })
+                //})
                 .UseFunctionInvocation()
                 .Build(sp);
             });

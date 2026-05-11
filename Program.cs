@@ -18,5 +18,6 @@ Console.WriteLine($"{proveedor}: {modelo}");
 var builder = Host.CreateApplicationBuilder(args);
 Startup.ConfigureServices(builder, proveedor, modelo);
 var host = builder.Build();
+
 var chatClient = host.Services.GetRequiredService<IChatClient>();
 await Chatbot.Correr(chatClient);

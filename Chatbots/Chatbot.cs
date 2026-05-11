@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.AI;
+﻿using Anthropic.Models.Beta.Messages;
+using Microsoft.Extensions.AI;
 using System.Text;
+using System.Text.Json;
 
 namespace Primerchatbot.Chatbots
 {
@@ -11,19 +13,6 @@ namespace Primerchatbot.Chatbots
             Console.WriteLine();
 
             var mensajes = new List<ChatMessage>();
-
-            /*
-             * Primero especificamos el System Prompt; 
-             * que es un mensaje que le damos al modelo de lenguaje para establecer el contexto y las instrucciones para la conversación.
-             
-             * System Prompt
-             * El System Prompt es un mensaje que se le da al modelo de lenguaje para establecer el contexto
-             * y las instrucciones para la conversación. Es importante para guiar al modelo sobre cómo debe responder a las preguntas del usuario.
-             * En este caso, el System Prompt establece que el asistente debe responder preguntas generales en español y
-             * que las respuestas deben ser en texto plano, sin usar formatos como markdown.
-             * También se pueden crear System Prompts específicos para temas como C# o Python,
-             * indicando que el asistente es un experto en esos temas y que debe dar ejemplos en sus respuestas.
-            */
 
             var systemPrompt = """
             Eres un asistente que responde preguntas generales.
@@ -37,53 +26,112 @@ namespace Primerchatbot.Chatbots
             Las respuestas deben ser en un texto plano, no usar formatos como markdown.
             """;
 
-            // Luego le pasamos el Rol System para indicar que este mensaje es una instrucción para el modelo de lenguaje,
-            // es decir, es un mensaje que establece el contexto y las reglas para la conversación.
             mensajes.Add(new ChatMessage(role: ChatRole.System, systemPrompt));
 
-            //Despues, iniciamos un bucle infinito para mantener el programa en ejecución
             while (true)
             {
-                // Usamos StringBuilder para construir la respuesta del asistente de manera eficiente, especialmente cuando se van a concatenar muchas partes.
-                var sb = new StringBuilder();
-
-                //Indicamos el color de la consola para diferenciar la entrada del usuario
                 Console.ForegroundColor = ConsoleColor.Blue;
                 Console.Write("Tu: ");
 
-                //Luego leemos la entrada del usuario
                 var entrada = Console.ReadLine();
                 Console.ResetColor();
 
-                //Si el usuario presiona Enter sin escribir nada, salir del programa
                 if (string.IsNullOrWhiteSpace(entrada))
                 {
                     break;
                 }
 
-                // Luego agregamos el rol de User para indicar que este mensaje es una pregunta del usuario,
-                // esto es importante para que el modelo de lenguaje entienda el contexto de la conversación
-                // y pueda responder de manera adecuada. 
                 mensajes.Add(new ChatMessage(role: ChatRole.User, entrada));
 
-                // Imprimimos un mensaje para indicar que el asistente está respondiendo
                 Console.WriteLine();
                 Console.Write($"IA: ");
 
-                // Obtenemos la respuesta del asistente de manera incremental (streaming)
-                await foreach (var fragmento in cliente.GetStreamingResponseAsync(mensajes))
+                while (true) 
                 {
-                    // Agrega cada fragmento de la respuesta al StringBuilder y mostrarlo en la consola
-                    sb.Append(fragmento);
-                    // Muestra el fragmento en la consola a medida que se recibe para dar una experiencia de respuesta en tiempo real
-                    Console.Write(fragmento);
-                }
+                    var updates = new List<ChatResponseUpdate>();
+                    await foreach (var responseUpdate in cliente.GetStreamingResponseAsync(mensajes))
+                    {
+                        updates.Add(responseUpdate);
 
-                // Por ultimo, agregamos la respuesta del asistente al historial de mensajes
-                mensajes.Add(new ChatMessage(role: ChatRole.Assistant, sb.ToString()));
-                Console.WriteLine();
-                Console.WriteLine();
+                        foreach (var contenido in responseUpdate.Contents) 
+                        {
+                            if (contenido is TextContent contenidoTexto) 
+                            {
+                                Console.Write(contenidoTexto);
+                            }
+                        }
+                    }
+
+                    var respuesta = updates.ToChatResponse();
+                    mensajes.AddMessages(respuesta);
+
+                    var solicitudAprobacion = respuesta.Messages
+                                            .SelectMany(x => x.Contents)
+                                            .OfType<ToolApprovalRequestContent>()
+                                            .FirstOrDefault();
+
+                    if (solicitudAprobacion is not null)
+                    {
+                        Console.WriteLine();
+                        Console.WriteLine();
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine("La IA desea ejecutar la siguiente función:");
+
+                        if (solicitudAprobacion.ToolCall is FunctionCallContent functionCall) 
+                        {
+                            Console.WriteLine($"Tool: {ConvertirNombreDeFuncion(functionCall.Name)}");
+
+                            if (functionCall.Arguments is not null) 
+                            {
+                                foreach (var argumento in functionCall.Arguments) 
+                                {
+                                    Console.WriteLine($"{argumento.Key}: {argumento.Value}");
+                                }
+                            }
+                        }
+
+                        Console.ResetColor();
+                        Console.Write("¿Desea aprobar esta acción? (s/n): ");
+
+                        var aprobada = Console.ReadLine()?.Trim().ToLower() == "s";
+                        var respuestaAprobacion = solicitudAprobacion.CreateResponse(aprobada);
+
+                        // Requiere: using System.Text.Json;
+                        Console.WriteLine("solicitudAprobacion: " + JsonSerializer.Serialize(solicitudAprobacion));
+                        Console.WriteLine("respuestaAprobacion Type: " + (respuestaAprobacion?.GetType().FullName ?? "null"));
+                        Console.WriteLine("respuestaAprobacion JSON: " + JsonSerializer.Serialize(respuestaAprobacion));
+                        Console.WriteLine("mensajes count BEFORE add: " + mensajes.Count);
+
+                        mensajes.Add(new ChatMessage(ChatRole.User, [respuestaAprobacion]));
+
+                        // después de mensajes.Add(...)
+                        Console.WriteLine("mensajes count AFTER add: " + mensajes.Count);
+                        Console.WriteLine("último mensaje: " + JsonSerializer.Serialize(mensajes.Last()));
+
+                        Console.WriteLine();
+                        Console.Write("IA: ");
+                        continue;
+                    }
+
+                    Console.WriteLine();
+                    Console.WriteLine();
+                    break;
+                }
             }
+        }
+
+        // Este método es un ejemplo de cómo podríamos convertir el nombre de una función a un formato más amigable para mostrar al usuario.
+        private static string ConvertirNombreDeFuncion(string nombre) 
+        {
+            // Aquí podríamos agregar más casos para convertir otros nombres de funciones a un formato más legible.
+            // Por ejemplo:
+            // Aquí indicamos que si el nombre de la función es "EnviarCorreo", lo convertimos a "Enviar correo" para mostrarlo al usuario de una forma más amigable.
+            // Y en el caso contrario, si no tenemos un caso específico para convertir el nombre de la función, simplemente devolvemos el nombre original.
+            return nombre switch
+            {
+                "EnviarCorreo" => "Enviar correo",
+                _ => nombre
+            };
         }
     }
 }
