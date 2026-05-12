@@ -14,6 +14,18 @@ namespace Primerchatbot.Services
                 [Description("Correo del destintario")]string destinatario
             ) 
         {
+            // Validaciones básicas para simular errores comunes al enviar un correo
+            if (!string.IsNullOrWhiteSpace(asunto) && asunto.Length > 0) 
+            {
+                var primeraLetra = asunto[0].ToString();
+
+                if(primeraLetra != primeraLetra.ToUpper()) 
+                {
+                    throw new Exception("Error con el asunto del correo. La primera letra de este debe ser en mayuscula");
+                }
+            }
+            /*************************************************************************/
+
             Console.WriteLine("Enviando el correo...");
 
             Console.WriteLine($"""

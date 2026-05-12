@@ -46,22 +46,17 @@ namespace Primerchatbot.Inyections
                     x.Temperature = 0.7f;
                     x.Tools = [.. Tools.Tools.ObtenerTools(sp)];
                 })
-                //.Use(async (mensaje, opciones, next, cancellationToken) => 
-                //{
-                //    Console.WriteLine();
-                //    Console.ForegroundColor = ConsoleColor.Green;
-                //    Console.WriteLine($"Analizando prompt...");
-                //    Console.ResetColor();
-
-                //    await next(mensaje, opciones, cancellationToken);
-
-                //    Console.WriteLine();
-                //    Console.ForegroundColor = ConsoleColor.Green;
-                //    Console.WriteLine($"Se brindo respuesta...");
-                //    Console.ResetColor();
-
-                //})
-                .UseFunctionInvocation()
+                .UseFunctionInvocation(null, x => 
+                {
+                    // Habilitamos los errores detallados para la invocación de funciones.
+                    // Con esto podemos ver los errores detallados que nos da el modelo al momento de invocar una función,
+                    // por ejemplo, si no se le pasan los parámetros correctos, etc.
+                    x.IncludeDetailedErrors = true;
+                })
+                .Use(async (mensaje, opciones, next, cancellationToken) =>
+                {
+                    await next(mensaje, opciones, cancellationToken);
+                })
                 .Build(sp);
             });
         }

@@ -18,6 +18,8 @@ namespace Primerchatbot.Chatbots
             Eres un asistente que responde preguntas generales.
             Debes responder en español.
             Las respuestas deben ser en texto plano, no usar formatos como markdown.
+
+            Si un tool falla lee el mensaje de la excepción para ver si puedes arreglarlo haciendo algun ajuste. Comunicale al usuario cualquier ajuste que vayas a hacer.
             """;
 
             var systemPromptCsharp = """
