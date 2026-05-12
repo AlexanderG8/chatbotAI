@@ -49,6 +49,7 @@ namespace Primerchatbot.Chatbots
                 while (true) 
                 {
                     var updates = new List<ChatResponseUpdate>();
+
                     await foreach (var responseUpdate in cliente.GetStreamingResponseAsync(mensajes))
                     {
                         updates.Add(responseUpdate);
@@ -96,17 +97,7 @@ namespace Primerchatbot.Chatbots
                         var aprobada = Console.ReadLine()?.Trim().ToLower() == "s";
                         var respuestaAprobacion = solicitudAprobacion.CreateResponse(aprobada);
 
-                        // Requiere: using System.Text.Json;
-                        Console.WriteLine("solicitudAprobacion: " + JsonSerializer.Serialize(solicitudAprobacion));
-                        Console.WriteLine("respuestaAprobacion Type: " + (respuestaAprobacion?.GetType().FullName ?? "null"));
-                        Console.WriteLine("respuestaAprobacion JSON: " + JsonSerializer.Serialize(respuestaAprobacion));
-                        Console.WriteLine("mensajes count BEFORE add: " + mensajes.Count);
-
                         mensajes.Add(new ChatMessage(ChatRole.User, [respuestaAprobacion]));
-
-                        // después de mensajes.Add(...)
-                        Console.WriteLine("mensajes count AFTER add: " + mensajes.Count);
-                        Console.WriteLine("último mensaje: " + JsonSerializer.Serialize(mensajes.Last()));
 
                         Console.WriteLine();
                         Console.Write("IA: ");
@@ -120,13 +111,8 @@ namespace Primerchatbot.Chatbots
             }
         }
 
-        // Este método es un ejemplo de cómo podríamos convertir el nombre de una función a un formato más amigable para mostrar al usuario.
         private static string ConvertirNombreDeFuncion(string nombre) 
         {
-            // Aquí podríamos agregar más casos para convertir otros nombres de funciones a un formato más legible.
-            // Por ejemplo:
-            // Aquí indicamos que si el nombre de la función es "EnviarCorreo", lo convertimos a "Enviar correo" para mostrarlo al usuario de una forma más amigable.
-            // Y en el caso contrario, si no tenemos un caso específico para convertir el nombre de la función, simplemente devolvemos el nombre original.
             return nombre switch
             {
                 "EnviarCorreo" => "Enviar correo",

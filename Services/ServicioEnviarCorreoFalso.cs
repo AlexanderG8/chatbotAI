@@ -5,7 +5,6 @@ using System.Text;
 
 namespace Primerchatbot.Services
 {
-    // Servicio para enviar un correo falso, simplemente imprime el contenido del correo en la consola
     internal class ServicioEnviarCorreoFalso
     {
         [Description("Envia un correo a un destinatario.")]

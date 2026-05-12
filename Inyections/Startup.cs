@@ -27,7 +27,6 @@ namespace Primerchatbot.Inyections
             builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.None);
             builder.Services.AddHttpClient();
 
-            // Agregamos servicios relacionados con correo electrónico falso
             builder.Services.AddTransient<ServicioEnviarCorreoFalso>();
             builder.Services.AddTransient<ServicioObtenerCorreoFalso>();
 
